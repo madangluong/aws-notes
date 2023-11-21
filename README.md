@@ -229,14 +229,20 @@ Ta cần phải khai báo rõ ràng minimum và maximum size của Auto scaling 
 
 - **Desired capacity**: Auto scaling sẽ luôn đảm bảo số lượng instance bạn khai báo alive, nhưng không nhất thiết phải khai báo tham số này. Nếu tham số desired capacity không được khai báo thì Auto scaling sẽ tự động tạo khai báo với range nằm giữa minimum và maximum. Desired capacity còn được gọi là `group size`.
 
-**Auto scaling options**
+**Auto scaling method options**
 
 - **Manual scaling**: ta có thể set các điều kiện cho trước để Auto scaling phụ thuộc vào đó tiến hành scale down or scale up instance cho phù hợp thông qua các tham số `minimum`, `desired capacity` và `maximum`. Các thông số này một khi được update Auto scaling group ngay lập tức áp dụng và điều chỉnh lại số lượng instance.
 
-- **Simple scaling**: phụ thuộc vào các `adjustment types` mà khi instance metric vượt ngưỡng sẽ có các hình thức hoạt động khác nhau.
-    - **ChangeInCapacity**: tăng công suất theo 1 lượng nhất định (chỉ định số lượng instance scale bằng 1 giá trị cụ thể). VD: desired ban đầu là 4 và ta chỉ muốn tăng 2 instance thì Auto scaling sẽ tăng thêm lượng instance bằng 6, nếu ta lại set giá trị tăng chỉ là 1 thì khi Auto scaling scale instance cũng chỉ mở rộng thêm 1 instance, tổng số instance lúc này là 5. 
+- **Dynamic scaling policies**: Auto scaling sẽ tự động bump instance trước khi instance đến ngưỡng quá tải dựa vào `CloudWacth` alarm. CloudWatch lấy metric từ instance và phân thành các group như sau: `Average` `CPU` `utilization`, `Average` `request` `count` `per` `target`, `Average` `network` `bytes` `in`, `Average` `network` `bytes` `out`. Ngoài các native metric group trên, ta có thể tự định nghĩa thông qua metric filter. Dynamic scaling policies được phân làm 3 loại: simple, step, and target tracking. 
 
-- **Dynamic scaling**: 
+    - **Simple scaling policies**: phụ thuộc vào các `adjustment` `types` mà khi instance metric vượt ngưỡng sẽ có các hình thức hoạt động khác nhau. Mỗi adjustment types đều cần thông qua 1 khoảng thời gian chờ gọi là `cooldown` mới thực hiện việc scale instance, `default` `cooldown=300s`, ta có thể điều chỉnh lại theo nhu cầu hoặc tắt bằng cách set `cooldown=0`, khi 1 instance được xác định là unhealthy Auto scaling sẽ bỏ qua thời gian chờ cooldown mà ngay lập tức replace unhealthy instance.  VD: Auto scaling vừa thực hiện scale instance nhưng vẫn nhận được alarm thì nó sẽ chờ heert cooldown time bắt đầu scale lần tiếp theo.
+        - **ChangeInCapacity**: tăng công suất theo 1 lượng nhất định (chỉ định số lượng instance scale bằng 1 giá trị cụ thể). VD: desired ban đầu là 4 và ta chỉ muốn tăng 2 instance thì Auto scaling sẽ tăng thêm lượng instance bằng 6, nếu ta lại set giá trị tăng chỉ là 1 thì khi Auto scaling scale instance cũng chỉ mở rộng thêm 1 instance, tổng số instance lúc này là 5. 
+    
+        - **ExactCapacity**: chỉ định số lượng capacity trực tiếp. VD: desired capacity đang là 2, tạo policy để đổi thành 3 khi tải tăng.
+
+        - **PercentChangeInCapacity**: chỉ định số lượng instance scale phụ thuộc vào `%` số lượng instance hiện tại. VD: desired capacity đang là 4 và ta set tăng 50% khi tải tăng thì Auto scaling sẽ bump instance thêm 2 (50% của 4), lúc này số tổng instance là 6. Nếu sau khi Auto scale bump xong mà vẫn nhận alarm (đã đạt điều kiện cooldown time), Auto scaling sẽ tiếp tục bump instance thêm 3 (50% của 6), lúc này tổng số instance sẽ là 9 khi và chỉ khi maximum capacity được set lớn hơn hoặc bằng 9, số lượng instance bump bởi Auto scaling không thể vượt quá maximum capacity.
+
+    - **Step scaling policies**: scale instance thông qua CloudWatch alarm, chỉ định ngưỡng scale với lượng instance cụ thể thông qua 1 tập hợp các bước thực hiện còn gọi là `step` `adjustment`. VD: khi average CPU utilization đạt ngưỡng 50% thì tạo thêm 2 instance, 60% thì tạo 4 instance
 
 ### 3.2 AWS System Manager
 
